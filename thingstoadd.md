@@ -1,0 +1,8 @@
+- EMF
+- Velocity
+- Actual Magnet
+- Text
+- Explantion
+- Animation to show the EMF
+- Buttons to reset and go
+- 
