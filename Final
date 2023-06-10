@@ -1,0 +1,137 @@
+Web VPython 3.2
+
+from vpython import *
+
+# Create label outside the canvas
+# wtext("<h1>Simulating the Copper Magnet Experiment</h1>")
+
+# Create scene
+scene = canvas(width=800, height=600, align='left', background=vector(1, 1, 1))
+
+# Create label
+labled = label(text="Simulating the Copper Magnet Experiment by Yusha & Sky", pos=vector(0, 15, 0), height=30, box=False)
+
+# Constants
+gravity = vector(0, -9.8, 0)  # Acceleration due to gravity
+
+# Create objects
+table = box(pos=vector(0, -15, 0), size=vector(10, 0.2, 10), color=vector(0.5, 0.5, 0.5))
+copper_tube = cylinder(pos=vector(-2, 4, 0), axis=vector(0, -10, 0), radius=1, opacity=0.5, color=vector(1, 0.5, 0))
+wooden_tube = cylinder(pos=vector(2, 4, 0), axis=vector(0, -10, 0), radius=1, opacity=0.5, color=vector(0.6, 0.4, 0.2))
+copper_magnet_top = cylinder(pos=vector(-2, 11, 0), axis=vector(0, -0.5, 0), radius=0.5, color=vector(1, 0, 0))
+copper_magnet_bottom = cylinder(pos=vector(-2, 10.5, 0), axis=vector(0, -0.5, 0), radius=0.5, color=vector(0, 0, 1))
+wooden_magnet_top = cylinder(pos=vector(2, 11, 0), axis=vector(0, -0.5, 0), radius=0.5, color=vector(1, 0, 0))
+wooden_magnet_bottom = cylinder(pos=vector(2, 10.5, 0), axis=vector(0, -0.5, 0), radius=0.5, color=vector(0, 0, 1))
+
+copper_magnet = compound([copper_magnet_top, copper_magnet_bottom])
+copper_magnet.axis = vector(1,0,0)
+
+wooden_magnet = compound([wooden_magnet_top, wooden_magnet_bottom])
+wooden_magnet.axis = vector(1,0,0)
+
+# Set initial conditions
+copper_magnet.velocity = vector(0, 0, 0)
+wooden_magnet.velocity = vector(0, 0, 0)
+
+# Create velocity graphs
+wooden_graph_title = "Wooden Tube Magnet Velocity vs Time"
+wooden_graph_xaxis = "Time (s)"
+wooden_graph_yaxis = "Velocity (m/s)"
+wooden_velocity_graph = graph(title=wooden_graph_title, xtitle=wooden_graph_xaxis, ytitle=wooden_graph_yaxis, align='right', width=400, height=300)
+
+copper_graph_title = "Copper Tube Magnet Velocity vs Time"
+copper_graph_xaxis = "Time (s)"
+copper_graph_yaxis = "Velocity (m/s)"
+copper_velocity_graph = graph(title=copper_graph_title, xtitle=copper_graph_xaxis, ytitle=copper_graph_yaxis, align='right', width=400, height=300)
+
+# Create velocity curves for wooden and copper magnets
+copper_curve = gcurve(graph=copper_velocity_graph, color=color.red)
+wooden_curve = gcurve(graph=wooden_velocity_graph, color=color.blue)
+
+# Time step
+dt = 0.01
+timer = 0.1
+running = False  # Flag to track if simulation is running
+
+def start_simulation():
+    global running
+    running = True
+    labled.text = ""
+
+def stop_simulation():
+    global running
+    running = False
+
+def reset_simulation():
+    global running, timer
+    running = False
+    timer = 0.1
+
+    # Reset object positions and velocities
+    copper_magnet.pos = vector(-2, 11, 0)
+    copper_magnet.velocity = vector(0, 0, 0)
+    wooden_magnet.pos = vector(2, 11, 0)
+    wooden_magnet.velocity = vector(0, 0, 0)
+
+    # Clear velocity graph
+    copper_curve.delete()
+    wooden_curve.delete()
+
+# Create start, stop, and reset buttons
+start_button = button(text="Start", bind=start_simulation, align='left')
+stop_button = button(text="Stop", bind=stop_simulation, align='left')
+reset_button = button(text="Reset", bind=reset_simulation, align='left')
+stop_button.disabled = True
+
+while True:
+    rate(100)
+    if running:
+        timer += dt
+
+        # Update copper magnet position and velocity
+        copper_magnet.pos += copper_magnet.velocity * dt
+        copper_magnet.velocity += gravity * dt
+
+        # Check if copper magnet hits the table
+        if copper_magnet.pos.y <= -14:
+            # Stop moving
+            copper_magnet.velocity = vector(0, 0, 0)
+
+        # Check if copper magnet is inside copper tube
+        if copper_magnet.pos.y <= -6:
+            copper_magnet.velocity += gravity * dt
+        elif copper_magnet.pos.y <= copper_tube.pos.y and abs(copper_magnet.pos.x - copper_tube.pos.x) <= copper_tube.radius:
+            # Apply magnetic field effect in opposite direction
+            copper_magnet.velocity -= copper_magnet.velocity * 3 * dt
+
+        # Update wooden magnet position and velocity
+        wooden_magnet.pos += wooden_magnet.velocity * dt
+        #wooden_magnet.velocity += gravity * dt
+
+        # Check if wooden magnet hits the table
+        if wooden_magnet.pos.y <= -14:
+            # Stop moving
+            wooden_magnet.velocity = vector(0, 0, 0)
+
+        # Check if wooden magnet is inside wooden tube
+        if wooden_magnet.pos.y <= -6:
+            wooden_magnet.velocity += gravity * dt
+        elif wooden_magnet.pos.y <= wooden_tube.pos.y and abs(wooden_magnet.pos.x - wooden_tube.pos.x) <= wooden_tube.radius:
+            # Apply gravity only
+            wooden_magnet.velocity += gravity * dt
+        else:
+            wooden_magnet.velocity += gravity * dt
+
+        # Update velocity curves
+        copper_curve.plot(pos=(timer, copper_magnet.velocity.y))
+        wooden_curve.plot(pos=(timer, wooden_magnet.velocity.y))
+
+    # Update button states
+    if running:
+        start_button.disabled = True
+        stop_button.disabled = False
+        reset_button.disabled = True
+    else:
+        start_button.disabled = False
+        stop_button.disabled = True
+        reset_button.disabled = False
